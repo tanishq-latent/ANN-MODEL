@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LapPrice Oracle</title>
+  <meta name="description" content="Build a laptop, get a price prediction from the neural net." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="static/style.css" />
+</head>
+<body>
+  <!-- Floating background blobs -->
+  <div class="blob blob-1" aria-hidden="true"></div>
+  <div class="blob blob-2" aria-hidden="true"></div>
+  <div class="blob blob-3" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <a class="logo" href="#">
+      <span class="logo-mark">€</span>
+      <span>LapPrice<em>Oracle</em></span>
+    </a>
+    <div class="api-pill" id="apiStatus" data-status="checking">
+      <span class="dot"></span><span class="api-label">Pinging API…</span>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- ============ LEFT: the builder ============ -->
+    <section class="builder">
+      <div class="hero">
+        <p class="eyebrow">Neural-net powered · prices in euros</p>
+        <h1>Build a laptop.<br /><span class="grad">We'll guess the damage.</span></h1>
+        <p class="sub">Tap the parts, drag the sliders, and let the model do some very serious mental math.</p>
+      </div>
+
+      <div class="presets">
+        <span class="presets-label">Quick starts</span>
+        <div class="preset-row" id="presetRow">
+          <button type="button" class="preset dice" id="surpriseBtn" title="Load a random preset">🎲 Surprise me</button>
+        </div>
+      </div>
+
+      <form id="laptopForm" class="card form" novalidate>
+        <!-- 01 -->
+        <fieldset class="step">
+          <legend><span class="step-num">01</span> Brand &amp; vibe</legend>
+          <div class="field">
+            <span class="field-label" id="lbl-Company">Company</span>
+            <div class="chips" id="chips-Company" role="group" aria-labelledby="lbl-Company"></div>
+          </div>
+          <div class="field">
+            <span class="field-label" id="lbl-TypeName">Type</span>
+            <div class="chips" id="chips-TypeName" role="group" aria-labelledby="lbl-TypeName"></div>
+          </div>
+        </fieldset>
+
+        <!-- 02 -->
+        <fieldset class="step">
+          <legend><span class="step-num">02</span> Body &amp; size</legend>
+          <div class="field">
+            <label class="field-label" for="Inches">Screen size <output id="out-Inches" class="val" for="Inches">13.3″</output></label>
+            <input type="range" id="Inches" min="10.1" max="18.4" step="0.1" />
+            <div class="range-hints"><span>📱 tiny</span><span>📺 huge</span></div>
+          </div>
+          <div class="field">
+            <label class="field-label" for="Weight">Weight <output id="out-Weight" class="val" for="Weight">1.37 kg</output></label>
+            <input type="range" id="Weight" min="0.69" max="4.7" step="0.01" />
+            <div class="range-hints"><span>🪶 feather</span><span>🧱 brick</span></div>
+          </div>
+          <div class="field">
+            <span class="field-label" id="lbl-Ram">RAM</span>
+            <div class="chips chips-ram" id="chips-Ram" role="group" aria-labelledby="lbl-Ram"></div>
+          </div>
+        </fieldset>
+
+        <!-- 03 -->
+        <fieldset class="step">
+          <legend><span class="step-num">03</span> The guts</legend>
+          <div class="grid-2">
+            <div class="field">
+              <label class="field-label" for="Cpu">CPU</label>
+              <input class="text-input" id="Cpu" list="dl-Cpu" autocomplete="off" spellcheck="false" placeholder="Intel Core i5 7200U 2.5GHz" />
+              <datalist id="dl-Cpu"></datalist>
+            </div>
+            <div class="field">
+              <label class="field-label" for="Gpu">GPU</label>
+              <input class="text-input" id="Gpu" list="dl-Gpu" autocomplete="off" spellcheck="false" placeholder="Intel HD Graphics 620" />
+              <datalist id="dl-Gpu"></datalist>
+            </div>
+            <div class="field">
+              <label class="field-label" for="Memory">Storage</label>
+              <input class="text-input" id="Memory" list="dl-Memory" autocomplete="off" spellcheck="false" placeholder="256GB SSD" />
+              <datalist id="dl-Memory"></datalist>
+            </div>
+            <div class="field">
+              <label class="field-label" for="ScreenResolution">Screen resolution</label>
+              <input class="text-input" id="ScreenResolution" list="dl-ScreenResolution" autocomplete="off" spellcheck="false" placeholder="Full HD 1920x1080" />
+              <datalist id="dl-ScreenResolution"></datalist>
+            </div>
+          </div>
+          <p class="hint" id="optionsHint">💡 The model only knows values from its training data, so pick from the suggestions.</p>
+        </fieldset>
+
+        <!-- 04 -->
+        <fieldset class="step">
+          <legend><span class="step-num">04</span> Operating system</legend>
+          <div class="field">
+            <div class="chips" id="chips-OpSys" role="group" aria-label="Operating system"></div>
+          </div>
+        </fieldset>
+
+        <div class="actions">
+          <button type="button" class="btn-ghost" id="resetBtn">↺ Reset</button>
+          <button type="submit" class="btn-primary" id="predictBtn">
+            <span class="btn-text">🔮 Predict price</span>
+            <span class="kbd">Ctrl ↵</span>
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ============ RIGHT: the stage ============ -->
+    <aside class="stage" id="stage">
+      <div class="stage-inner card">
+        <div class="laptop" id="laptop">
+          <div class="lid">
+            <span class="cam"></span>
+            <div class="screen" id="screen" data-state="idle" aria-live="polite">
+              <div class="s s-idle">
+                <span class="big-emoji">🤔</span>
+                <p>Configure me,<br />then hit predict</p>
+              </div>
+              <div class="s s-loading">
+                <div class="scan"></div>
+                <p class="mono">crunching numbers<span class="dots"></span></p>
+              </div>
+              <div class="s s-result">
+                <p class="mono tiny">estimated price</p>
+                <p class="price"><span class="cur">€</span><span id="priceValue">0.00</span></p>
+                <p class="stale-note">config changed · predict again</p>
+              </div>
+              <div class="s s-error">
+                <span class="big-emoji">😵</span>
+                <p id="errorText">Something broke</p>
+              </div>
+            </div>
+          </div>
+          <div class="base"><span class="notch"></span></div>
+        </div>
+
+        <div class="spec-tag" id="specTag"></div>
+        <div class="tier" id="tier" hidden></div>
+        <div class="fun" id="fun" hidden></div>
+      </div>
+
+      <div class="history card">
+        <div class="history-head">
+          <h2>Recent guesses</h2>
+          <button type="button" class="link-btn" id="clearHistory">clear</button>
+        </div>
+        <ul class="history-list" id="historyList"></ul>
+        <p class="empty" id="historyEmpty">No predictions yet. Go on, be brave.</p>
+      </div>
+    </aside>
+  </main>
+
+  <footer class="foot">Made with a Keras model, FastAPI and a tiny bit of chaos.</footer>
+
+  <div class="toast" id="toast" role="status"></div>
+  <canvas id="confetti" aria-hidden="true"></canvas>
+
+  <script src="static/script.js"></script>
+</body>
+</html>
